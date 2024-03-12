@@ -154,6 +154,7 @@ function get_clients(req, res) {
           filterCode: clients[key].filterCode,
           filterName: clients[key].filterName,
           filterType: clients[key].filterType,
+          filterText: clients[key].filterText,
           filterStarred: clients[key].filterStarred,
           active: clients[key].active,
           talkgroupNums: clients[key].talkgroupNums,
@@ -196,7 +197,7 @@ function notify_clients(call) {
       if (client.active) {
         if (client.shortName == call.shortName.toLowerCase()) {
           // if client is not filtering for stars, or if the client is filtering and the call has stars
-          if (!client.filterStarred || call.star) {
+          if (!client.filterStarred || call.star) && call_matches_filterText(client, call)) {
             if (client.filterCode == "") {
               sent++;
               client.socket.emit("new message", JSON.stringify(call));
@@ -218,7 +219,7 @@ function notify_clients(call) {
               }
 
 
-            } else {
+            } else if (call_matches_filterText(client, call)) {
               var codeArray = client.talkgroupNums;
               for (var j = 0; j < codeArray.length; ++j) {
                 if (codeArray[j] == call.talkgroupNum) {
@@ -239,11 +240,44 @@ function notify_clients(call) {
   }
 }
 
+function call_matches_filterText(client, call) {
+  if (!client.filterText) {
+    return true; // No filter text, so include the call
+  }
+  const transcriptLower = call.transcript ? call.transcript.toLowerCase() : '';
+  const filterItems = client.filterText.trim().split('"');
+  for (let i = 0; i < filterItems.length; i++) {
+    const item = filterItems[i].trim();
+    if (item) {
+      if (i % 2 === 0) {
+        // Non-quoted items, split into individual words
+        const filterWords = item.split(' '); 
+        for (const word of filterWords) {
+          const trimmedWord = word.trim();
+          if (trimmedWord) {
+            if (transcriptLower.includes(trimmedWord.toLowerCase())) {
+              return true;
+            }
+          }
+        }
+      } else {
+        // Quoted items, exact phrase enclosed in double quotes
+        const phrase = item.toLowerCase();
+        if (transcriptLower.includes(phrase)) {
+          return true; 
+        }
+      }
+    }
+  } 
+  return false; 
+}
+
 io.sockets.on('connection', function (client) {
   clients[client.id] = { socket: client, active: false };
   clients[client.id].timestamp = new Date();
   client.on('start', async function (data) {
     if ((typeof clients[client.id] !== "undefined") && data.shortName) {
+      clients[client.id].filterText = String(data.filterText);
       clients[client.id].active = true;
       clients[client.id].shortName = data.shortName.toLowerCase();
       clients[client.id].filterCode = String(data.filterCode);

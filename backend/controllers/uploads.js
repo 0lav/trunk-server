@@ -41,6 +41,10 @@ exports.upload = async function (req, res, next) {
     if (req.body.stop_time) {
       var stopTime = new Date(parseInt(req.body.stop_time) * 1000);
     }
+    var transcript = "" ;
+    if (req.body.transcript) {
+      transcript = req.body.transcript;
+    }
     var startTime = req.body.start_time;
     var emergency = parseInt(req.body.emergency);
 
@@ -168,6 +172,7 @@ exports.upload = async function (req, res, next) {
       errorCount: errorCount,
       spikeCount: spikeCount,
       url: url,
+      transcript: transcript,
       emergency: emergency,
       path: local_path,
       srcList: srcList,

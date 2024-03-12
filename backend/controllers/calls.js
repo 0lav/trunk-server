@@ -18,6 +18,7 @@ const build_call_list = (items) => {
             filename: item.path + item.name,
             time: item.time,
             srcList: item.srcList,
+            transcript: item.transcript,
             star: item.star,
             freq: item.freq,
             len: Math.round(item.len)
@@ -37,6 +38,7 @@ async function get_calls(query, numResults, middleDate, res) {
         name: true,
         time: true,
         srcList: true,
+        transcript: true,
         freq: true,
         star: true,
         len: true,
@@ -70,7 +72,7 @@ async function get_calls(query, numResults, middleDate, res) {
     };
 }
 
-async function build_filter(filter_type, code, start_time, direction, shortName, numResults, starred, res) {
+async function build_filter(filter_type, code, start_time, direction, shortName, numResults, starred,text_search, res) {
     var filter = {};
     var query = {};
     var start = new Date(start_time);
@@ -89,6 +91,9 @@ async function build_filter(filter_type, code, start_time, direction, shortName,
 
     }
 
+    if (text_search && text_search.trim() !== '') {
+        filter.$text = { $search: text_search };
+    }
 
     var sort_order = {};
     if (direction == 'newer') {
@@ -212,6 +217,7 @@ function package_call(item) {
         name: item.name,
         freq: item.freq,
         srcList: item.srcList,
+        transcript: item.transcript,
         star: item.star,
         len: Math.round(item.len)
     };
@@ -329,9 +335,10 @@ exports.get_date_calls = function (req, res) {
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var start_time = parseInt(req.query["time"]);
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] Next Calls - time: " + start_time + " Filter code: " + filter_code + " Filter Type: " + filter_type);
 
-    build_filter(filter_type, filter_code, start_time, 'middle', short_name, defaultNumResults, starred, res);
+    build_filter(filter_type, filter_code, start_time, 'middle', short_name, defaultNumResults, starred, text_search, res);
 }
 
 
@@ -340,9 +347,10 @@ exports.get_latest_calls = function (req, res) {
     var filter_type = req.query["filter-type"];
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] Latest -  Call Get Filter code: " + filter_code + " Filter Type: " + filter_type );
 
-    build_filter(filter_type, filter_code, null, 'older', short_name, 1, starred, res);
+    build_filter(filter_type, filter_code, null, 'older', short_name, 1, starred, text_search, res);
 }
 
 
@@ -352,9 +360,10 @@ exports.get_next_calls = function (req, res) {
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var start_time = parseInt(req.query["time"]);
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] Next Calls - time: " + start_time + " Filter code: " + filter_code + " Filter Type: " + filter_type);
 
-    build_filter(filter_type, filter_code, start_time, 'newer', short_name, 1, starred, res);
+    build_filter(filter_type, filter_code, start_time, 'newer', short_name, 1, starred, text_search, res);
 }
 
 exports.get_newer_calls = function (req, res) {
@@ -363,9 +372,10 @@ exports.get_newer_calls = function (req, res) {
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var start_time = parseInt(req.query["time"]);
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] Newer Calls - time: " + start_time + " Filter code: " + filter_code + " Filter Type: " + filter_type );
 
-    build_filter(filter_type, filter_code, start_time, 'newer', short_name, defaultNumResults, starred, res);
+    build_filter(filter_type, filter_code, start_time, 'newer', short_name, defaultNumResults, starred, text_search, res);
 }
 
 exports.get_older_calls = function (req, res) {
@@ -374,9 +384,10 @@ exports.get_older_calls = function (req, res) {
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var start_time = parseInt(req.query["time"]);
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] Older Calls - time: " + start_time + " Filter code: " + filter_code + " Filter Type: " + filter_type);
 
-    build_filter(filter_type, filter_code, start_time, 'older', short_name, defaultNumResults, starred, res);
+    build_filter(filter_type, filter_code, start_time, 'older', short_name, defaultNumResults, starred, text_search, res);
 }
 
 
@@ -387,9 +398,10 @@ exports.get_iphone_calls = function (req, res) {
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var start_time = parseInt(req.params.time);
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] iPhone Newer Calls - time: " + start_time + " Filter code: " + filter_code + " Filter Type: " + filter_type);
 
-    build_filter(filter_type, filter_code, start_time, 'older', short_name, defaultNumResults, starred, res);
+    build_filter(filter_type, filter_code, start_time, 'older', short_name, defaultNumResults, starred, text_search, res);
 }
 
 exports.get_calls = function (req, res) {
@@ -397,7 +409,8 @@ exports.get_calls = function (req, res) {
     var filter_type = req.query["filter-type"];
     var starred = req.query["filter-starred"] === 'true' ? true : false;
     var short_name = req.params.shortName.toLowerCase();
+    var text_search = req.query["text"] ? req.query["text"].toString() : '';
     //console.log("[" + short_name + "] Inital Calls -  Call Get Filter code: " + filter_code + " Filter Type: " + filter_type);
 
-    build_filter(filter_type, filter_code, null, 'older', short_name, defaultNumResults, starred, res);
+    build_filter(filter_type, filter_code, null, 'older', short_name, defaultNumResults, starred, text_search, res);
 }

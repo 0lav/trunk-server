@@ -16,6 +16,7 @@ var callSchema = mongoose.Schema({
   errorCount: Number,
   spikeCount: Number,
   url: String,
+  transcript: String,
   emergency: Boolean,
   path: String,
   len: Number,
